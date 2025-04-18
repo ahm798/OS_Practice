@@ -1,0 +1,93 @@
+// Shared resource
+shared_resource = 0
+
+// Initialize resource counter and mutex
+resource_counter = 0
+counter_mutex = Mutex()
+read_phase = ConditionVariable()
+write_phase = ConditionVariable()
+
+// Reader function
+function reader() {
+    while true {
+        // Lock the mutex
+        lock(counter_mutex)
+
+        // Check if there are writers
+        if resource_counter == -1 {
+            // Wait for the write phase to finish
+            wait(read_phase)
+        }
+
+        // Increment the resource counter
+        resource_counter += 1
+
+        // Unlock the mutex
+        unlock(counter_mutex)
+
+        // Read the shared resource
+        print("Reading resource: " + shared_resource)
+
+        // Lock the mutex again to update the counter
+        lock(counter_mutex)
+
+        // Decrement the resource counter
+        resource_counter -= 1
+
+        // If this was the last reader, signal writers
+        if resource_counter == 0 {
+            signal(write_phase)
+        }
+
+        // Unlock the mutex
+        unlock(counter_mutex)
+
+        // Simulate reading delay
+        sleep(1)
+    }
+}
+
+// Writer function
+function writer() {
+    while true {
+        // Lock the mutex
+        lock(counter_mutex)
+
+        // Wait if there are active readers
+        while resource_counter > 0 {
+            wait(write_phase)
+        }
+
+        // Set resource counter to -1 to indicate writing
+        resource_counter = -1
+
+        // Unlock the mutex
+        unlock(counter_mutex)
+
+        // Write to the shared resource
+        shared_resource += 1
+        print("Writing resource: " + shared_resource)
+
+        // Lock the mutex again to reset the counter
+        lock(counter_mutex)
+
+        // Reset resource counter to 0
+        resource_counter = 0
+
+        // Signal readers that writing is done
+        signal(read_phase)
+
+        // Unlock the mutex
+        unlock(counter_mutex)
+
+        // Simulate writing delay
+        sleep(2)
+    }
+}
+
+// Create reader and writer threads
+for i from 1 to 5 {
+    create_thread(reader)
+}
+
+create_thread(writer)
