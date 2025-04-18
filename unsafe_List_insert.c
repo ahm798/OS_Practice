@@ -29,14 +29,16 @@ void* threadfunction(void *arg){
 int main(){
 	node* head = NULL;
 	
-	pthread_t tid;
-	ThreadArgs *dargs = (ThreadArgs *)malloc(sizeof(ThreadArgs));
+	pthread_t threads[3];
+	ThreadArgs dargs[3];
 
 	for(int i = 0; i < 3; i++){
-		dargs->data = i+1;
-		dargs->head = &head;
-		pthread_create(&tid, NULL, threadfunction, (void *)dargs);
-		pthread_join(tid, NULL);
+		dargs[i].data = i+1;
+		dargs[i].head = &head;
+		pthread_create(&threads[i], NULL, threadfunction, &dargs[i]);
+	}
+	for(int i = 0; i < 3; i++){
+		pthread_join(threads[i], NULL);
 	}
 
 
@@ -57,6 +59,7 @@ void insert(node **head, int data){
 	node* newNode = createNode(data);
 	newNode -> next = *head;
 	*head = newNode;
+	printf("Thread %ld: Inserted %d\n", pthread_self(), data);
 }
 
 void printList(node *head){
