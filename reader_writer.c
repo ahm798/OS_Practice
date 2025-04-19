@@ -12,6 +12,8 @@ typedef struct {
 
 
 void * reader(void *args){
+
+    // reader Entry point 
     resource_args *res_args = (resource_args *)args;
 
     pthread_mutex_lock(&res_args->counter_mutex);
@@ -22,8 +24,8 @@ void * reader(void *args){
     pthread_mutex_unlock(&res_args->counter_mutex);
     // reading resource file 
     printf("Reader %ld: Reading resource. Counter: %d\n", pthread_self(), res_args->resource_counter);
-    //finish reading and reset he resource counter 
 
+    // reader exit point 
     pthread_mutex_lock(&res_args->counter_mutex);
     res_args->resource_counter--;
     if(res_args->resource_counter == 0){
@@ -34,6 +36,8 @@ void * reader(void *args){
 }
 
 void * writer(void *args){
+
+    // writer entry point
     resource_args *res_args = (resource_args *)args;
     pthread_mutex_lock(&res_args->counter_mutex);
     while(res_args -> resource_counter != 0){
@@ -43,12 +47,15 @@ void * writer(void *args){
     pthread_mutex_unlock(&res_args->counter_mutex);
     // writing resource file
     printf("Writer %ld: Writing resource. Counter: %d\n", pthread_self(), res_args->resource_counter);
+
+    // writer exit point
     // finish writing and reset the resource counter
     //notify other reading threads to read thhe resource
 
     pthread_mutex_lock(&res_args->counter_mutex);
     res_args->resource_counter = 0;
     pthread_cond_broadcast(&res_args->read_cond);
+    pthread_cond_signal(&res_args->write_cond);
     pthread_mutex_unlock(&res_args->counter_mutex);
     return NULL;
 }
